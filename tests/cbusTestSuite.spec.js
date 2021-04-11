@@ -10,12 +10,6 @@ const NET_ADDRESS = "127.0.0.1"
 
 function decToHex(num, len) {return parseInt(num).toString(16).toUpperCase().padStart(len, '0');}
 
-function cbusTransmit(client, msgData)
-    {
-        winston.info({message: "Transmit: " + msgData + " " + cbusLib.decode(msgData).text});
-    	client.write(msgData);
-    }
-
 
 describe('cbus test suite tests', function(){
 
@@ -23,8 +17,8 @@ describe('cbus test suite tests', function(){
     let messagesIn = []
     
     var module = {
-        "nodeNumber":0,
-        "NVcount":0
+        "nodeNumber": null,
+        "NVcount": null
     }
 
 	before(function() {
@@ -43,7 +37,7 @@ describe('cbus test suite tests', function(){
             const msgArray = data.toString().split(";");
   			for (var msgIndex = 0; msgIndex < msgArray.length - 1; msgIndex++) {
                 msgArray[msgIndex] += ';'           // replace terminator removed by split function
-                winston.info({message: 'TEST: Test client: data received ' + msgArray[msgIndex] + " " + cbusLib.decode(msgArray[msgIndex]).text});
+                winston.info({message: 'TEST: Receive:  << ' + msgArray[msgIndex] + " " + cbusLib.decode(msgArray[msgIndex]).text});
                 messagesIn.push(msgArray[msgIndex])
             }
         })
@@ -73,6 +67,12 @@ describe('cbus test suite tests', function(){
     });
 	
 
+    function cbusTransmit(msgData)
+        {
+            winston.info({message: "TEST: Transmit: >> " + msgData + " " + cbusLib.decode(msgData).text});
+            testClient.write(msgData);
+        }
+
 
 
     // 0D QNN
@@ -80,16 +80,16 @@ describe('cbus test suite tests', function(){
 	it("QNN test", function (done) {
 		winston.info({message: 'TEST: BEGIN QNN test'});
         msgData = cbusLib.encodeQNN();
-        cbusTransmit(testClient, msgData)
+        cbusTransmit(msgData)
 		setTimeout(function(){
             expect(messagesIn.length).to.equal(1), 'returned message count';
             expect(messagesIn[0].length).to.equal(20), 'message length';
             expect(cbusLib.decode(messagesIn[0]).opCode).to.equal('B6'), 'opcode';
             module.nodeNumber = cbusLib.decode(messagesIn[0]).nodeNumber
-            winston.info({message: ">> nodeNumber: " + module.nodeNumber});
-            winston.info({message: "check other module parameters are correct"});
+            winston.info({message: "TEST: nodeNumber received: " + module.nodeNumber});
+            winston.info({message: "TEST: check other module parameters are correct"});
 			done();
-		}, 100);
+		}, 50);
 	})
 
     // 10 RQNP
@@ -97,16 +97,71 @@ describe('cbus test suite tests', function(){
 	it("RQNP test", function (done) {
 		winston.info({message: 'TEST: BEGIN RQNP test'});
         msgData = cbusLib.encodeRQNP();
-        cbusTransmit(testClient, msgData)
+        cbusTransmit(msgData)
 		setTimeout(function(){
             expect(messagesIn.length).to.equal(1), 'returned message count';
             expect(messagesIn[0].length).to.equal(24), 'message length';
             expect(cbusLib.decode(messagesIn[0]).opCode).to.equal('EF'), 'opcode';
             module.NVcount = cbusLib.decode(messagesIn[0]).param6
-            winston.info({message: ">> node variable count: " + module.NVcount});
-            winston.info({message: "check other module parameters are correct"});
+            winston.info({message: "TEST: node variable count received: " + module.NVcount});
+            winston.info({message: "TEST: check other module parameters are correct"});
 			done();
-		}, 100);
+		}, 50);
+	})
+
+	function GetTestCase_NVWR () {
+		var testCases = [];
+        for (NVvalue = 1; NVvalue < 4; NVvalue++) {
+            if (NVvalue == 1) nvValue = 0;
+            if (NVvalue == 2) nvValue = 1;
+            if (NVvalue == 3) nvValue = 255;
+            testCases.push({'nvValue':nvValue});
+        }
+		return testCases;
+	}
+
+
+	itParam("NV1 write/read test nvValue ${value.nvValue}", GetTestCase_NVWR(), function (done, value) {
+		winston.info({message: 'TEST: BEGIN NV1 write/read test : NV value ' + value.nvValue});
+        msgData = cbusLib.encodeNVSET(module.nodeNumber, 1, value.nvValue);
+        cbusTransmit(msgData)
+		setTimeout(function(){
+            expect(cbusLib.decode(messagesIn[0]).opCode).to.equal('59'), 'WRACK opcode';
+			//
+            msgData = cbusLib.encodeNVRD(module.nodeNumber, 1);
+            cbusTransmit(msgData)
+            setTimeout(function(){
+                expect(cbusLib.decode(messagesIn[1]).opCode).to.equal('97'), 'NVANS opcode';
+                expect(cbusLib.decode(messagesIn[1]).nodeVariableValue).to.equal(value.nvValue), 'NV value';
+                done();
+            }, 50);
+		}, 50);
+	})
+
+	itParam("NVMax write/read test nvValue ${value.nvValue}", GetTestCase_NVWR(), function (done, value) {
+		winston.info({message: 'TEST: BEGIN NVMax write/read test : NV value ' + value.nvValue});
+        msgData = cbusLib.encodeNVSET(module.nodeNumber, module.NVcount, value.nvValue);
+        cbusTransmit(msgData)
+		setTimeout(function(){
+            expect(cbusLib.decode(messagesIn[0]).opCode).to.equal('59'), 'WRACK opcode';
+			//
+            msgData = cbusLib.encodeNVRD(module.nodeNumber, 1);
+            cbusTransmit(msgData)
+            setTimeout(function(){
+                expect(cbusLib.decode(messagesIn[1]).opCode).to.equal('97'), 'NVANS opcode';
+                done();
+            }, 50);
+		}, 50);
+	})
+
+	itParam("NV out of bounds write/read test nvValue ${value.nvValue}", GetTestCase_NVWR(), function (done, value) {
+		winston.info({message: 'TEST: BEGIN NV out of bounds write/read test : NV value ' + value.nvValue});
+        msgData = cbusLib.encodeNVSET(module.nodeNumber, module.NVcount+1, value.nvValue);
+        cbusTransmit(msgData)
+		setTimeout(function(){
+            expect(cbusLib.decode(messagesIn[0]).opCode).to.equal('6F'), 'ERR opcode';
+            done();
+		}, 50);
 	})
 
 })

@@ -89,7 +89,7 @@ describe('cbus test suite tests', function(){
             winston.info({message: "TEST: nodeNumber received: " + module.nodeNumber});
             winston.info({message: "TEST: check other module parameters are correct"});
 			done();
-		}, 50);
+		}, 500);
 	})
 
 /*

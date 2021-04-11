@@ -21,6 +21,11 @@ describe('cbus test suite tests', function(){
 
 	let testClient = undefined;
     let messagesIn = []
+    
+    var module = {
+        "nodeNumber":0,
+        "NVcount":0
+    }
 
 	before(function() {
 		winston.info({message: ' '});
@@ -80,7 +85,9 @@ describe('cbus test suite tests', function(){
             expect(messagesIn.length).to.equal(1), 'returned message count';
             expect(messagesIn[0].length).to.equal(20), 'message length';
             expect(cbusLib.decode(messagesIn[0]).opCode).to.equal('B6'), 'opcode';
-            winston.info({message: "check module parameters are correct"});
+            module.nodeNumber = cbusLib.decode(messagesIn[0]).nodeNumber
+            winston.info({message: ">> nodeNumber: " + module.nodeNumber});
+            winston.info({message: "check other module parameters are correct"});
 			done();
 		}, 100);
 	})
@@ -95,7 +102,9 @@ describe('cbus test suite tests', function(){
             expect(messagesIn.length).to.equal(1), 'returned message count';
             expect(messagesIn[0].length).to.equal(24), 'message length';
             expect(cbusLib.decode(messagesIn[0]).opCode).to.equal('EF'), 'opcode';
-            winston.info({message: "check module parameters are correct"});
+            module.NVcount = cbusLib.decode(messagesIn[0]).param6
+            winston.info({message: ">> node variable count: " + module.NVcount});
+            winston.info({message: "check other module parameters are correct"});
 			done();
 		}, 100);
 	})

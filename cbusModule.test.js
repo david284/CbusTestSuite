@@ -68,7 +68,33 @@ afterAll((done) => {
     }, 100);
 });
 
+function cbusTransmit(msgData)
+    {
+        winston.info({message: "TEST: Transmit: >> " + msgData + " " + cbusLib.decode(msgData).text});
+        testClient.write(msgData);
+    }
 
-test("Dummy test", () => {
-    expect('1').toBe('1');
-});
+
+
+    test("Dummy test", () => {
+        expect('1').toBe('1');
+    });
+
+
+    // 0D QNN
+    //
+	test("QNN test", function (done) {
+		winston.info({message: 'TEST: BEGIN QNN test'});
+        msgData = cbusLib.encodeQNN();
+        cbusTransmit(msgData)
+		setTimeout(function(){
+            expect(messagesIn.length).toBe(1), 'returned message count';
+            expect(messagesIn[0].length).toBe(20), 'message length';
+            expect(cbusLib.decode(messagesIn[0]).opCode).toBe('B6'), 'opcode';
+            module.nodeNumber = cbusLib.decode(messagesIn[0]).nodeNumber
+            winston.info({message: "TEST: nodeNumber received: " + module.nodeNumber});
+            winston.info({message: "TEST: check other module parameters are correct"});
+			done();
+		}, 500);
+	})
+

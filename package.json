@@ -4,7 +4,7 @@
   "description": "Cbus Test Suite",
   "main": "server.js",
   "scripts": {
-    "test": "./node_modules/.bin/mocha ./tests/*.spec.js --timeout 30000 --exit",
+    "test": "jest cbusModule.test.js --noStackTrace --detectOpenHandles",
     "start": "node server"
   },
   "author": "David Ellis",
@@ -18,5 +18,8 @@
     "openurl": "^1.1.1",
     "socket.io": "^2.4.1",
     "winston": "^3.3.3"
+  },
+  "devDependencies": {
+    "jest": "^26.6.3"
   }
 }

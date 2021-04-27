@@ -34,18 +34,18 @@ beforeAll(() => {
             const msgArray = data.toString().split(";");
   			for (var msgIndex = 0; msgIndex < msgArray.length - 1; msgIndex++) {
                 msgArray[msgIndex] += ';'           // replace terminator removed by split function
-                winston.info({message: 'TEST: Receive:  << ' + msgArray[msgIndex] + " " + cbusLib.decode(msgArray[msgIndex]).text});
+                winston.debug({message: 'TEST: Receive:  << ' + msgArray[msgIndex] + " " + cbusLib.decode(msgArray[msgIndex]).text});
                 messagesIn.push(msgArray[msgIndex])
             }
         })
         
         testClient.on('end', function () {
-            winston.info({message: 'TEST: Client Disconnected at port ' + testClient.remotePort});
+            winston.debug({message: 'TEST: Client Disconnected at port ' + testClient.remotePort});
         });
 			
 
         testClient.on('error', function(err) {
-            winston.info({message: 'TEST: Socket error ' + err});
+            winston.debug({message: 'TEST: Socket error ' + err});
         });
 });
 
@@ -55,14 +55,14 @@ beforeEach (function() {
     messagesIn = [];
     // ensure expected CAN header is reset before each test run
     cbusLib.setCanHeader(2, 60)
-    winston.info({message: ' '});   // blank line to separate tests
+    winston.debug({message: ' '});   // blank line to separate tests
 })
 
 
 afterAll((done) => {
     testClient.end()
-    winston.info({message: ' '});                       // blank line to separate tests
-    winston.info({message: 'TEST: tests finished '});
+    winston.debug({message: ' '});                       // blank line to separate tests
+    winston.debug({message: 'TEST: tests finished '});
     setTimeout(function(){
         done();
     }, 100);
@@ -70,7 +70,7 @@ afterAll((done) => {
 
 function cbusTransmit(msgData)
     {
-        winston.info({message: "TEST: Transmit: >> " + msgData + " " + cbusLib.decode(msgData).text});
+        winston.debug({message: "TEST: Transmit: >> " + msgData + " " + cbusLib.decode(msgData).text});
         testClient.write(msgData);
     }
 
@@ -84,7 +84,7 @@ function cbusTransmit(msgData)
     // 0D QNN
     //
 	test("QNN test", function (done) {
-		winston.info({message: 'TEST: BEGIN QNN test'});
+		winston.debug({message: 'TEST: BEGIN QNN test'});
         msgData = cbusLib.encodeQNN();
         cbusTransmit(msgData)
 		setTimeout(function(){
@@ -92,9 +92,27 @@ function cbusTransmit(msgData)
             expect(messagesIn[0].length).toBe(20), 'message length';
             expect(cbusLib.decode(messagesIn[0]).opCode).toBe('B6'), 'opcode';
             module.nodeNumber = cbusLib.decode(messagesIn[0]).nodeNumber
-            winston.info({message: "TEST: nodeNumber received: " + module.nodeNumber});
-            winston.info({message: "TEST: check other module parameters are correct"});
+            winston.debug({message: "TEST: nodeNumber received: " + module.nodeNumber});
+            winston.debug({message: "TEST: check other module parameters are correct"});
 			done();
-		}, 500);
+		}, 100);
 	})
+
+    // 73 RQNPN - read number of parameters
+    //
+    test("RQNPN test", function (done) {
+		winston.debug({message: 'TEST: BEGIN RQNPN test'});
+        msgData = cbusLib.encodeRQNPN(module.nodeNumber, 6);
+        cbusTransmit(msgData)
+		setTimeout(function(){
+            expect(messagesIn.length).toBe(1), 'returned message count';
+            expect(messagesIn[0].length).toBe(18), 'message length';
+            expect(cbusLib.decode(messagesIn[0]).opCode).toBe('9B'), 'opcode';
+            module.NVcount = cbusLib.decode(messagesIn[0]).parameterValue
+            winston.debug({message: "TEST: node variable count received: " + module.NVcount});
+            winston.debug({message: "TEST: check other module parameters are correct"});
+			done();
+		}, 50);
+	})
+
 

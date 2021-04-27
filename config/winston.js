@@ -30,7 +30,7 @@ var messageOnly = winston.format.combine(
 
 var options = {
   file: {
-    level: 'info',
+    level: 'debug',
     filename: `./logs/winston.log`,
 	options: { flags: 'w' },
     handleExceptions: true,
@@ -39,7 +39,7 @@ var options = {
 	format: timeStampFirst
   },
   console: {
-    level: 'debug',
+    level: 'info',
     handleExceptions: true,
 	format: messageOnly
   },

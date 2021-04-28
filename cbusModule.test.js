@@ -173,5 +173,28 @@ function cbusTransmit(msgData)
   })
 
 
+  test.each`
+    input   | expectedResult
+    ${0}    | ${0}
+    ${1}    | ${1}
+    ${255}    | ${255}
+    // add new test cases here
+  `("NV out of bounds write/read test nvValue $input", ({ input, expectedResult}, done) => {
+		winston.info({message: 'TEST: BEGIN NV out of bounds write/read test : NV Index: ' + (module.NVcount + 1) + ' NV value ' + input});
+        msgData = cbusLib.encodeNVSET(module.nodeNumber, module.NVcount+1, input);
+        cbusTransmit(msgData)
+		setTimeout(function(){
+            expect(messagesIn.length).toBe(1), 'returned message count';
+            expect(cbusLib.decode(messagesIn[0]).opCode).toBe('6F'), 'ERR opcode';
+			//
+            msgData = cbusLib.encodeNVRD(module.nodeNumber, module.NVcount+1);
+            cbusTransmit(msgData)
+            setTimeout(function(){
+                expect(messagesIn.length).toBe(2), 'returned message count';
+                expect(cbusLib.decode(messagesIn[1]).opCode).toBe('6F'), 'ERR opcode';
+                done();
+            }, 50);
+		}, 50);
+	})
 
 

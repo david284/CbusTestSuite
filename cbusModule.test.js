@@ -11,13 +11,6 @@ function decToHex(num, len) {return parseInt(num).toString(16).toUpperCase().pad
 let testClient = undefined;
 let messagesIn = []
 
-var module = {
-    "nodeNumber": null,
-    "NVcount": null
-}
-
-
-
 beforeAll(() => {
 		winston.info({message: ' '});
 		winston.info({message: '======================================================================'});
@@ -98,23 +91,82 @@ function cbusTransmit(msgData)
 		}, 100);
 	})
 
-    // 73 RQNPN - read number of parameters
+
+var module = {
+    "nodeNumber": null,
+    "parameterCount":null,          // parameter 0
+    "manufacturerId":null,          // parameter 1
+    "minorCodeVersion":null,        // parameter 2
+    "moduleId":null,                // parameter 3
+    "eventCount":null,              // parameter 4
+    "eventVariableCount":null,      // parameter 5
+    "NVcount": null,                // parameter 6
+    "majorVersion": null,           // parameter 7
+    "nodeFlags": null               // parameter 8
+}
+
+
+    // RQNPN test
     //
-    test("RQNPN test", function (done) {
-		winston.debug({message: 'TEST: BEGIN RQNPN test'});
-        msgData = cbusLib.encodeRQNPN(module.nodeNumber, 6);
+    test.each`
+    input
+    ${0}
+    ${1}
+    ${2}
+    ${3}
+    ${4}
+    ${5}    
+    ${6}
+    ${7}
+    ${8}
+    // add new test cases here
+    `(`RQNPN $input test`, ({ input}, done) => {
+		winston.debug({message: `TEST: BEGIN RQNPN ${input} test`});
+        msgData = cbusLib.encodeRQNPN(module.nodeNumber, input);
         cbusTransmit(msgData)
 		setTimeout(function(){
             expect(messagesIn.length).toBe(1), 'returned message count';
             expect(messagesIn[0].length).toBe(18), 'message length';
             expect(cbusLib.decode(messagesIn[0]).opCode).toBe('9B'), 'opcode';
-            module.NVcount = cbusLib.decode(messagesIn[0]).parameterValue
-            winston.debug({message: "TEST: node variable count received: " + module.NVcount});
-            winston.debug({message: "TEST: check other module parameters are correct"});
+            if (input == 0) { module.parameterCount = cbusLib.decode(messagesIn[0]).parameterValue 
+                winston.info({message: "TEST: node parameter count received: " + module.parameterCount});}
+            if (input == 4) { module.eventCount = cbusLib.decode(messagesIn[0]).parameterValue 
+                winston.info({message: "TEST: node event count received: " + module.eventCount});}
+            if (input == 6) { module.NVcount = cbusLib.decode(messagesIn[0]).parameterValue 
+                winston.info({message: "TEST: node variable count received: " + module.NVcount});}
 			done();
 		}, 50);
 	})
 
+
+    // RQNPN Max test
+    //
+	test("RQNPN Max test", function (done) {
+		winston.debug({message: 'TEST: BEGIN RQNPN Max test'});
+        msgData = cbusLib.encodeRQNPN(module.nodeNumber, module.parameterCount);
+        cbusTransmit(msgData)
+		setTimeout(function(){
+            expect(messagesIn.length).toBe(1), 'returned message count';
+            expect(messagesIn[0].length).toBe(18), 'message length';
+            expect(cbusLib.decode(messagesIn[0]).opCode).toBe('9B'), 'opcode';
+			done();
+		}, 50);
+	})
+
+
+    // RQNPN Out of Bounds test
+    //
+	test.skip("RQNPN Out of Bounds test", function (done) {
+		winston.debug({message: 'TEST: BEGIN RQNPN Out of Bounds test'});
+        msgData = cbusLib.encodeRQNPN(module.nodeNumber, module.parameterCount + 1);
+        cbusTransmit(msgData)
+		setTimeout(function(){
+            expect(messagesIn.length).toBe(1), 'returned message count';
+            expect(messagesIn[0].length).toBe(18), 'message length';
+            expect(cbusLib.decode(messagesIn[0]).opCode).toBe('9B'), 'opcode';
+			done();
+		}, 50);
+	})
 
 
   test.each`
@@ -125,7 +177,7 @@ function cbusTransmit(msgData)
     // add new test cases here
   `('NV1 write/read test : nvValue $input', ({ input, expectedResult}, done) => {
     expect(input).toBe(expectedResult)
-	winston.debug({message: 'TEST: BEGIN NV1 write/read test : NV Index: 1 NV value: ' + input});
+	winston.debug({message: `TEST: BEGIN NV1 write/read test : NV Index: 1 NV value: ${input}`});
     messagesIn = [];
     msgData = cbusLib.encodeNVSET(module.nodeNumber, 1, input);
     cbusTransmit(msgData)
@@ -151,9 +203,9 @@ function cbusTransmit(msgData)
     ${1}    | ${1}
     ${255}    | ${255}
     // add new test cases here
-  `('NVmax write/read test : nvValue $input', ({ input, expectedResult}, done) => {
+  `(`NVmax write/read test : nvValue $input`, ({ input, expectedResult}, done) => {
     expect(input).toBe(expectedResult)
-	winston.debug({message: 'TEST: BEGIN NVmax write/read test : NV Index: ' + module.NVcount + ' NV value: ' + input});
+	winston.debug({message: `TEST: BEGIN NVmax write/read test : NV Index: ${module.NVcount} NV value: ${input}`});
     messagesIn = [];
     msgData = cbusLib.encodeNVSET(module.nodeNumber, module.NVcount, input);
     cbusTransmit(msgData)
@@ -180,7 +232,7 @@ function cbusTransmit(msgData)
     ${255}    | ${255}
     // add new test cases here
   `("NV out of bounds write/read test nvValue $input", ({ input, expectedResult}, done) => {
-		winston.info({message: 'TEST: BEGIN NV out of bounds write/read test : NV Index: ' + (module.NVcount + 1) + ' NV value ' + input});
+		winston.debug({message: `TEST: BEGIN NV out of bounds write/read test : NV Index: ${module.NVcount + 1} NV value ${input}`});
         msgData = cbusLib.encodeNVSET(module.nodeNumber, module.NVcount+1, input);
         cbusTransmit(msgData)
 		setTimeout(function(){

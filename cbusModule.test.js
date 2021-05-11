@@ -279,4 +279,74 @@ var module = {
 	})
 
 
+    // NENRD EV 1 test
+    //
+	test("NENRD EV1 test", function (done) {
+		winston.debug({message: 'TEST: BEGIN NENRD EV1 test'});
+        msgData = cbusLib.encodeNENRD(module.nodeNumber, 1);
+        cbusTransmit(msgData)
+		setTimeout(function(){
+            expect(messagesIn.length).toBe(1), 'returned message count';
+            expect(cbusLib.decode(messagesIn[1]).opCode).toBe('F2'), 'ENRSP opcode';
+//            expect(cbusLib.decode(messagesIn[1]).nodeVariableValue).toBe(expectedResult), 'NV value';
+			done();
+		}, 50);
+	})
+
+
+    // NENRD EV Max test
+    //
+	test("NENRD Max test", function (done) {
+		winston.debug({message: 'TEST: BEGIN NENRD Max test'});
+        msgData = cbusLib.encodeNENRD(module.nodeNumber, module.eventCount);
+        cbusTransmit(msgData)
+		setTimeout(function(){
+            expect(messagesIn.length).toBe(1), 'returned message count';
+            expect(cbusLib.decode(messagesIn[1]).opCode).toBe('F2'), 'ENRSP opcode';
+//            expect(cbusLib.decode(messagesIn[1]).nodeVariableValue).toBe(expectedResult), 'NV value';
+			done();
+		}, 50);
+	})
+
+
+    // NENRD EV out of bounds test
+    //
+	test("NENRD out of bounds test", function (done) {
+		winston.debug({message: 'TEST: BEGIN NENRD out of bounds test'});
+        msgData = cbusLib.encodeNENRD(module.nodeNumber, module.eventCount + 1);
+        cbusTransmit(msgData)
+		setTimeout(function(){
+            if (messagesIn.length < 1) {
+                winston.info({message: `\u001b[36;1mTEST: WARNING: NENRD out of bounds test failed : EV Index: ${module.eventCount + 1}\u001b[0m`});
+                WarningCount++;
+            }
+            else{
+                expect(cbusLib.decode(messagesIn[1]).opCode).toBe('6F'), 'ERR opcode';
+            }
+			done();
+		}, 50);
+	})
+
+
+
+    // NNLRN change to learn mode test
+    //
+	test.skip("RQNPN NNLRN test", function (done) {
+		winston.debug({message: 'TEST: BEGIN NNLRN test'});
+        msgData = cbusLib.encodeNNLRN(module.nodeNumber);
+        cbusTransmit(msgData)
+		setTimeout(function(){
+            if (messagesIn.length != 1) {
+                winston.info({message: `\u001b[36;1mTEST: WARNING: NNLRN test failed\u001b[0m`});
+                WarningCount++;
+            }
+            else{
+                expect(messagesIn[0].length).toBe(18), 'message length';
+                expect(cbusLib.decode(messagesIn[0]).opCode).toBe('9B'), 'opcode';
+            }
+			done();
+		}, 50);
+	})
+
+
 

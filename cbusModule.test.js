@@ -45,7 +45,6 @@ beforeAll(() => {
 });
 
 
-
 beforeEach (function() {
     messagesIn = [];
     // ensure expected CAN header is reset before each test run
@@ -71,10 +70,11 @@ function cbusTransmit(msgData)
     }
 
 
-
-    test("Dummy test", () => {
-        expect('1').toBe('1');
-    });
+// ========================
+//
+// Start of actual tests
+//
+// ========================
 
 
     // 0D QNN
@@ -91,7 +91,7 @@ function cbusTransmit(msgData)
             winston.debug({message: "TEST: nodeNumber received: " + module.nodeNumber});
             winston.debug({message: "TEST: check other module parameters are correct"});
 			done();
-		}, 100);
+		}, 200);
 	})
 
 
@@ -239,27 +239,44 @@ var module = {
     ${1}    | ${1}
     ${255}    | ${255}
     // add new test cases here
-  `("NV out of bounds write/read test nvValue $input", ({ input, expectedResult}, done) => {
-		winston.debug({message: `TEST: BEGIN NV out of bounds write/read test : NV Index: ${module.NVcount + 1} NV value ${input}`});
+  `("NV Write out of bounds test nvValue $input", ({ input, expectedResult}, done) => {
+		winston.debug({message: `TEST: BEGIN NV Write out of bounds test : NV Index: ${module.NVcount + 1} NV value ${input}`});
         msgData = cbusLib.encodeNVSET(module.nodeNumber, module.NVcount+1, input);
         cbusTransmit(msgData)
 		setTimeout(function(){
-            expect(messagesIn.length).toBe(1), 'returned message count';
-            expect(cbusLib.decode(messagesIn[0]).opCode).toBe('6F'), 'ERR opcode';
-			//
-            msgData = cbusLib.encodeNVRD(module.nodeNumber, module.NVcount+1);
-            cbusTransmit(msgData)
-            setTimeout(function(){
-                if (messagesIn.length != 2) {
-                    winston.info({message: `\u001b[36;1mTEST: WARNING: NV Read out of bounds test failed : NV Index: ${module.NVcount + 1}\u001b[0m`});
-                    WarningCount++;
-                }
-                else{
-                    expect(cbusLib.decode(messagesIn[1]).opCode).toBe('6F'), 'ERR opcode';
-                }
-                done();
-            }, 50);
+            if (messagesIn.length < 1) {
+                winston.info({message: `\u001b[36;1mTEST: WARNING: NV Write out of bounds test failed : NV Index: ${module.NVcount + 1}\u001b[0m`});
+                WarningCount++;
+            }
+            else{
+                expect(messagesIn.length).toBe(1), 'returned message count';
+                expect(cbusLib.decode(messagesIn[0]).opCode).toBe('6F'), 'ERR opcode';
+            }
+            done();
 		}, 50);
 	})
+
+  test.each`
+    input   | expectedResult
+    ${0}    | ${0}
+    ${1}    | ${1}
+    ${255}    | ${255}
+    // add new test cases here
+  `("NV Read out of bounds test nvValue $input", ({ input, expectedResult}, done) => {
+		winston.debug({message: `TEST: BEGIN NV Read out of bounds test : NV Index: ${module.NVcount + 1} NV value ${input}`});
+        msgData = cbusLib.encodeNVRD(module.nodeNumber, module.NVcount+1);
+        cbusTransmit(msgData)
+        setTimeout(function(){
+            if (messagesIn.length < 1) {
+                winston.info({message: `\u001b[36;1mTEST: WARNING: NV Read out of bounds test failed : NV Index: ${module.NVcount + 1}\u001b[0m`});
+                WarningCount++;
+            }
+            else{
+                expect(cbusLib.decode(messagesIn[1]).opCode).toBe('6F'), 'ERR opcode';
+            }
+            done();
+        }, 50);
+	})
+
 
 

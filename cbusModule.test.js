@@ -10,12 +10,14 @@ function decToHex(num, len) {return parseInt(num).toString(16).toUpperCase().pad
 
 let testClient = undefined;
 let messagesIn = []
+let WarningCount = 0;
 
 beforeAll(() => {
 		winston.info({message: ' '});
 		winston.info({message: '======================================================================'});
 		winston.info({message: '---------------------------- cbus test suite -------------------------'});
 		winston.info({message: '======================================================================'});
+        winston.info({message: `\u001b[31m1 \u001b[32m2 \u001b[33m3 \u001b[34m4 \u001b[35m5 \u001b[36m6 \u001b[37m7 \u001b[0m`});
 		winston.info({message: ' '});
 
         testClient = new net.Socket()
@@ -55,6 +57,7 @@ beforeEach (function() {
 afterAll((done) => {
     testClient.end()
     winston.debug({message: ' '});                       // blank line to separate tests
+    winston.info({message: `\u001b[36;1mTEST: ${WarningCount} Warnings found\u001b[0m`});
     winston.debug({message: 'TEST: tests finished '});
     setTimeout(function(){
         done();
@@ -156,14 +159,19 @@ var module = {
 
     // RQNPN Out of Bounds test
     //
-	test.skip("RQNPN Out of Bounds test", function (done) {
+	test("RQNPN Out of Bounds test", function (done) {
 		winston.debug({message: 'TEST: BEGIN RQNPN Out of Bounds test'});
         msgData = cbusLib.encodeRQNPN(module.nodeNumber, module.parameterCount + 1);
         cbusTransmit(msgData)
 		setTimeout(function(){
-            expect(messagesIn.length).toBe(1), 'returned message count';
-            expect(messagesIn[0].length).toBe(18), 'message length';
-            expect(cbusLib.decode(messagesIn[0]).opCode).toBe('9B'), 'opcode';
+            if (messagesIn.length != 1) {
+                winston.info({message: `\u001b[36;1mTEST: WARNING: RQNPN out of bounds test failed : Parameter Index: ${module.parameterCount + 1}\u001b[0m`});
+                WarningCount++;
+            }
+            else{
+                expect(messagesIn[0].length).toBe(18), 'message length';
+                expect(cbusLib.decode(messagesIn[0]).opCode).toBe('9B'), 'opcode';
+            }
 			done();
 		}, 50);
 	})
@@ -242,8 +250,13 @@ var module = {
             msgData = cbusLib.encodeNVRD(module.nodeNumber, module.NVcount+1);
             cbusTransmit(msgData)
             setTimeout(function(){
-                expect(messagesIn.length).toBe(2), 'returned message count';
-                expect(cbusLib.decode(messagesIn[1]).opCode).toBe('6F'), 'ERR opcode';
+                if (messagesIn.length != 2) {
+                    winston.info({message: `\u001b[36;1mTEST: WARNING: NV Read out of bounds test failed : NV Index: ${module.NVcount + 1}\u001b[0m`});
+                    WarningCount++;
+                }
+                else{
+                    expect(cbusLib.decode(messagesIn[1]).opCode).toBe('6F'), 'ERR opcode';
+                }
                 done();
             }, 50);
 		}, 50);

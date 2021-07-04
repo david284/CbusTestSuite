@@ -272,7 +272,7 @@ var module = {
                 WarningCount++;
             }
             else{
-                expect(cbusLib.decode(messagesIn[1]).opCode).toBe('6F'), 'ERR opcode';
+                expect(cbusLib.decode(messagesIn[0]).opCode).toBe('6F'), 'ERR opcode';
             }
             done();
         }, 50);
@@ -287,8 +287,8 @@ var module = {
         cbusTransmit(msgData)
 		setTimeout(function(){
             expect(messagesIn.length).toBe(1), 'returned message count';
-            expect(cbusLib.decode(messagesIn[1]).opCode).toBe('F2'), 'ENRSP opcode';
-//            expect(cbusLib.decode(messagesIn[1]).nodeVariableValue).toBe(expectedResult), 'NV value';
+            expect(cbusLib.decode(messagesIn[0]).opCode).toBe('F2'), 'ENRSP opcode';
+//            expect(cbusLib.decode(messagesIn[0]).nodeVariableValue).toBe(expectedResult), 'NV value';
 			done();
 		}, 50);
 	})
@@ -296,13 +296,13 @@ var module = {
 
     // NENRD EV Max test
     //
-	test("NENRD Max test", function (done) {
+	test.skip("NENRD Max test", function (done) {
 		winston.debug({message: 'TEST: BEGIN NENRD Max test'});
         msgData = cbusLib.encodeNENRD(module.nodeNumber, module.eventCount);
         cbusTransmit(msgData)
 		setTimeout(function(){
             expect(messagesIn.length).toBe(1), 'returned message count';
-            expect(cbusLib.decode(messagesIn[1]).opCode).toBe('F2'), 'ENRSP opcode';
+            expect(cbusLib.decode(messagesIn[0]).opCode).toBe('F2'), 'ENRSP opcode';
 //            expect(cbusLib.decode(messagesIn[1]).nodeVariableValue).toBe(expectedResult), 'NV value';
 			done();
 		}, 50);
@@ -321,7 +321,7 @@ var module = {
                 WarningCount++;
             }
             else{
-                expect(cbusLib.decode(messagesIn[1]).opCode).toBe('6F'), 'ERR opcode';
+                expect(cbusLib.decode(messagesIn[0]).opCode).toBe('6F'), 'ERR opcode';
             }
 			done();
 		}, 50);
@@ -331,7 +331,7 @@ var module = {
 
     // NNLRN change to learn mode test
     //
-	test.skip("RQNPN NNLRN test", function (done) {
+	test.skip("NNLRN test", function (done) {
 		winston.debug({message: 'TEST: BEGIN NNLRN test'});
         msgData = cbusLib.encodeNNLRN(module.nodeNumber);
         cbusTransmit(msgData)
@@ -343,6 +343,55 @@ var module = {
             else{
                 expect(messagesIn[0].length).toBe(18), 'message length';
                 expect(cbusLib.decode(messagesIn[0]).opCode).toBe('9B'), 'opcode';
+            }
+			done();
+		}, 50);
+	})
+
+
+
+    // Event write Index 1 test
+    //
+	test("EV1 write test", function (done) {
+		winston.debug({message: 'TEST: BEGIN EV1 Write test'});
+        // put module into learn mode
+        msgData = cbusLib.encodeNNLRN(module.nodeNumber);
+        cbusTransmit(msgData)
+        // teach event - <0xD2><NN hi><NN lo><EN hi><EN lo> <EV#><EV val>
+        msgData = cbusLib.encodeEVLRN(module.nodeNumber, 1, 1, 1);
+        cbusTransmit(msgData)
+		setTimeout(function(){
+            if (messagesIn.length < 1) {
+                winston.info({message: `\u001b[36;1mTEST: WARNING: EV1 Write test failed\u001b[0m`});
+                WarningCount++;
+            }
+            else{
+                expect(messagesIn[0].length).toBe(14), 'message length';
+                expect(cbusLib.decode(messagesIn[0]).opCode).toBe('59'), 'WRACK opcode';
+            }
+			done();
+		}, 50);
+	})
+
+
+    // Event write Max Index test
+    //
+	test("EVmax write test", function (done) {
+		winston.debug({message: 'TEST: BEGIN EVmax Write test'});
+        // put module into learn mode
+        msgData = cbusLib.encodeNNLRN(module.nodeNumber);
+        cbusTransmit(msgData)
+        // teach event - <0xD2><NN hi><NN lo><EN hi><EN lo> <EV#><EV val>
+        msgData = cbusLib.encodeEVLRN(module.nodeNumber, module.eventCount, module.eventCount, 1);
+        cbusTransmit(msgData)
+		setTimeout(function(){
+            if (messagesIn.length < 1) {
+                winston.info({message: `\u001b[36;1mTEST: WARNING: EVmax Write test failed\u001b[0m`});
+                WarningCount++;
+            }
+            else{
+                expect(messagesIn[0].length).toBe(14), 'message length';
+                expect(cbusLib.decode(messagesIn[0]).opCode).toBe('59'), 'WRACK opcode';
             }
 			done();
 		}, 50);

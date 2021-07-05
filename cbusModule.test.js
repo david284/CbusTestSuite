@@ -183,7 +183,7 @@ var module = {
     ${1}    | ${1}
     ${255}    | ${255}
     // add new test cases here
-  `('NV1 write/read test : nvValue $input', ({ input, expectedResult}, done) => {
+  `('NVSET/NVRD/WRACK NV1 test : nvValue $input', ({ input, expectedResult}, done) => {
     expect(input).toBe(expectedResult)
 	winston.debug({message: `TEST: BEGIN NV1 write/read test : NV Index: 1 NV value: ${input}`});
     messagesIn = [];
@@ -211,7 +211,7 @@ var module = {
     ${1}    | ${1}
     ${255}    | ${255}
     // add new test cases here
-  `(`NVmax write/read test : nvValue $input`, ({ input, expectedResult}, done) => {
+  `(`NVSET/NVRD/WRACK NVmax test : nvValue $input`, ({ input, expectedResult}, done) => {
     expect(input).toBe(expectedResult)
 	winston.debug({message: `TEST: BEGIN NVmax write/read test : NV Index: ${module.NVcount} NV value: ${input}`});
     messagesIn = [];
@@ -239,7 +239,7 @@ var module = {
     ${1}    | ${1}
     ${255}    | ${255}
     // add new test cases here
-  `("NV Write out of bounds test nvValue $input", ({ input, expectedResult}, done) => {
+  `("NVSET/ERR NV Write out of bounds test nvValue $input", ({ input, expectedResult}, done) => {
 		winston.debug({message: `TEST: BEGIN NV Write out of bounds test : NV Index: ${module.NVcount + 1} NV value ${input}`});
         msgData = cbusLib.encodeNVSET(module.nodeNumber, module.NVcount+1, input);
         cbusTransmit(msgData)
@@ -262,7 +262,7 @@ var module = {
     ${1}    | ${1}
     ${255}    | ${255}
     // add new test cases here
-  `("NV Read out of bounds test nvValue $input", ({ input, expectedResult}, done) => {
+  `("NVRD NV Read out of bounds test nvValue $input", ({ input, expectedResult}, done) => {
 		winston.debug({message: `TEST: BEGIN NV Read out of bounds test : NV Index: ${module.NVcount + 1} NV value ${input}`});
         msgData = cbusLib.encodeNVRD(module.nodeNumber, module.NVcount+1);
         cbusTransmit(msgData)
@@ -352,7 +352,7 @@ var module = {
 
     // Event write Index 1 test
     //
-	test("EV1 write test", function (done) {
+	test("NNLRN/EVLRN/WRACK EV1 test", function (done) {
 		winston.debug({message: 'TEST: BEGIN EV1 Write test'});
         // put module into learn mode
         msgData = cbusLib.encodeNNLRN(module.nodeNumber);
@@ -376,7 +376,7 @@ var module = {
 
     // Event write Max Index test
     //
-	test("EVmax write test", function (done) {
+	test("NNLRN/EVLRN/WRACK EVmax test", function (done) {
 		winston.debug({message: 'TEST: BEGIN EVmax Write test'});
         // put module into learn mode
         msgData = cbusLib.encodeNNLRN(module.nodeNumber);

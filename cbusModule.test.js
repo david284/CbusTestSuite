@@ -397,5 +397,33 @@ var module = {
 		}, 50);
 	})
 
+  test.skip
+/*  test.each`
+    input   | expectedResult
+    ${0}    | ${0}
+    ${1}    | ${1}
+    ${255}    | ${255}
+    // add new test cases here
+  `*/
+  ("CANID test setting CAN Id $input", ({ input, expectedResult}, done) => {
+		winston.debug({message: `TEST: BEGIN CANID test : CANID value ${input}`});
+        msgData = cbusLib.encodeCANID(module.nodeNumber, input);
+        cbusTransmit(msgData)
+    setTimeout(function(){
+        expect(messagesIn.length).toBe(1), 'returned message count';
+        expect(cbusLib.decode(messagesIn[0]).opCode).toBe('59'), 'WRACK opcode';
+        //
+        msgData = cbusLib.encodeNVRD(module.nodeNumber, module.NVcount);
+        cbusTransmit(msgData)
+        setTimeout(function(){
+            expect(messagesIn.length).toBe(2), 'returned message count';
+            expect(cbusLib.decode(messagesIn[1]).opCode).toBe('97'), 'NVANS opcode';
+            expect(cbusLib.decode(messagesIn[1]).nodeVariableValue).toBe(expectedResult), 'NV value';
+            done();
+        }, 50);
+    }, 50);
+	})
+
+
 
 

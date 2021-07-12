@@ -250,7 +250,7 @@ var module = {
             }
             else{
                 expect(messagesIn.length).toBe(1), 'returned message count';
-                expect(cbusLib.decode(messagesIn[0]).opCode).toBe('6F'), 'ERR opcode';
+                expect(cbusLib.decode(messagesIn[0]).opCode).toBe('6F'), 'CMDERR opcode';
             }
             done();
 		}, 50);
@@ -272,7 +272,7 @@ var module = {
                 WarningCount++;
             }
             else{
-                expect(cbusLib.decode(messagesIn[0]).opCode).toBe('6F'), 'ERR opcode';
+                expect(cbusLib.decode(messagesIn[0]).opCode).toBe('6F'), 'CMDERR opcode';
             }
             done();
         }, 50);
@@ -321,7 +321,7 @@ var module = {
                 WarningCount++;
             }
             else{
-                expect(cbusLib.decode(messagesIn[0]).opCode).toBe('6F'), 'ERR opcode';
+                expect(cbusLib.decode(messagesIn[0]).opCode).toBe('6F'), 'CMDERR opcode';
             }
 			done();
 		}, 50);

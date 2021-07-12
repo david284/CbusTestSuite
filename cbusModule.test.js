@@ -79,14 +79,14 @@ function cbusTransmit(msgData)
 
     // 0D QNN
     //
-	test("QNN test", function (done) {
-		winston.debug({message: 'TEST: BEGIN QNN test'});
+	test("QNN/PNN test", function (done) {
+		winston.debug({message: 'TEST: BEGIN QNN/PNN test'});
         msgData = cbusLib.encodeQNN();
         cbusTransmit(msgData)
 		setTimeout(function(){
             expect(messagesIn.length).toBe(1), 'returned message count';
             expect(messagesIn[0].length).toBe(20), 'message length';
-            expect(cbusLib.decode(messagesIn[0]).opCode).toBe('B6'), 'opcode';
+            expect(cbusLib.decode(messagesIn[0]).mnemonic).toBe('PNN'), 'PNN opcode';
             module.nodeNumber = cbusLib.decode(messagesIn[0]).nodeNumber
             winston.debug({message: "TEST: nodeNumber received: " + module.nodeNumber});
             winston.debug({message: "TEST: check other module parameters are correct"});
@@ -123,14 +123,14 @@ var module = {
     ${7}
     ${8}
     // add new test cases here
-    `(`RQNPN $input test`, ({ input}, done) => {
-		winston.debug({message: `TEST: BEGIN RQNPN ${input} test`});
+    `(`RQNPN/PARAN $input test`, ({ input}, done) => {
+		winston.debug({message: `TEST: BEGIN RQNPN/PARAN ${input} test`});
         msgData = cbusLib.encodeRQNPN(module.nodeNumber, input);
         cbusTransmit(msgData)
 		setTimeout(function(){
             expect(messagesIn.length).toBe(1), 'returned message count';
             expect(messagesIn[0].length).toBe(18), 'message length';
-            expect(cbusLib.decode(messagesIn[0]).opCode).toBe('9B'), 'opcode';
+            expect(cbusLib.decode(messagesIn[0]).mnemonic).toBe('PARAN'), 'opcode';
             if (input == 0) { module.parameterCount = cbusLib.decode(messagesIn[0]).parameterValue 
                 winston.info({message: "TEST: node parameter count received: " + module.parameterCount});}
             if (input == 4) { module.eventCount = cbusLib.decode(messagesIn[0]).parameterValue 
@@ -144,14 +144,14 @@ var module = {
 
     // RQNPN Max test
     //
-	test("RQNPN Max test", function (done) {
-		winston.debug({message: 'TEST: BEGIN RQNPN Max test'});
+	test("RQNPN/PARAN Max test", function (done) {
+		winston.debug({message: 'TEST: BEGIN RQNPN/PARAN Max test'});
         msgData = cbusLib.encodeRQNPN(module.nodeNumber, module.parameterCount);
         cbusTransmit(msgData)
 		setTimeout(function(){
             expect(messagesIn.length).toBe(1), 'returned message count';
             expect(messagesIn[0].length).toBe(18), 'message length';
-            expect(cbusLib.decode(messagesIn[0]).opCode).toBe('9B'), 'opcode';
+            expect(cbusLib.decode(messagesIn[0]).mnemonic).toBe('PARAN'), 'opcode';
 			done();
 		}, 50);
 	})
@@ -159,7 +159,7 @@ var module = {
 
     // RQNPN Out of Bounds test
     //
-	test("RQNPN Out of Bounds test", function (done) {
+	test("RQNPN/CMDERR Out of Bounds test", function (done) {
 		winston.debug({message: 'TEST: BEGIN RQNPN Out of Bounds test'});
         msgData = cbusLib.encodeRQNPN(module.nodeNumber, module.parameterCount + 1);
         cbusTransmit(msgData)
@@ -170,7 +170,7 @@ var module = {
             }
             else{
                 expect(messagesIn[0].length).toBe(18), 'message length';
-                expect(cbusLib.decode(messagesIn[0]).opCode).toBe('9B'), 'opcode';
+                expect(cbusLib.decode(messagesIn[0]).mnemonic).toBe('CMDERR'), 'opcode';
             }
 			done();
 		}, 50);
@@ -191,13 +191,13 @@ var module = {
     cbusTransmit(msgData)
     setTimeout(function(){
         expect(messagesIn.length).toBe(1), 'returned message count';
-        expect(cbusLib.decode(messagesIn[0]).opCode).toBe('59'), 'WRACK opcode';
+        expect(cbusLib.decode(messagesIn[0]).mnemonic).toBe('WRACK'), 'WRACK opcode';
         //
         msgData = cbusLib.encodeNVRD(module.nodeNumber, 1);
         cbusTransmit(msgData)
         setTimeout(function(){
             expect(messagesIn.length).toBe(2), 'returned message count';
-            expect(cbusLib.decode(messagesIn[1]).opCode).toBe('97'), 'NVANS opcode';
+            expect(cbusLib.decode(messagesIn[1]).mnemonic).toBe('NVANS'), 'NVANS opcode';
             expect(cbusLib.decode(messagesIn[1]).nodeVariableValue).toBe(expectedResult), 'NV value';
             done();
         }, 50);
@@ -219,13 +219,13 @@ var module = {
     cbusTransmit(msgData)
     setTimeout(function(){
         expect(messagesIn.length).toBe(1), 'returned message count';
-        expect(cbusLib.decode(messagesIn[0]).opCode).toBe('59'), 'WRACK opcode';
+        expect(cbusLib.decode(messagesIn[0]).mnemonic).toBe('WRACK'), 'WRACK opcode';
         //
         msgData = cbusLib.encodeNVRD(module.nodeNumber, module.NVcount);
         cbusTransmit(msgData)
         setTimeout(function(){
             expect(messagesIn.length).toBe(2), 'returned message count';
-            expect(cbusLib.decode(messagesIn[1]).opCode).toBe('97'), 'NVANS opcode';
+            expect(cbusLib.decode(messagesIn[1]).mnemonic).toBe('NVANS'), 'NVANS opcode';
             expect(cbusLib.decode(messagesIn[1]).nodeVariableValue).toBe(expectedResult), 'NV value';
             done();
         }, 50);
@@ -239,7 +239,7 @@ var module = {
     ${1}    | ${1}
     ${255}    | ${255}
     // add new test cases here
-  `("NVSET/ERR NV Write out of bounds test nvValue $input", ({ input, expectedResult}, done) => {
+  `("NVSET/CMDERR NV Write out of bounds test nvValue $input", ({ input, expectedResult}, done) => {
 		winston.debug({message: `TEST: BEGIN NV Write out of bounds test : NV Index: ${module.NVcount + 1} NV value ${input}`});
         msgData = cbusLib.encodeNVSET(module.nodeNumber, module.NVcount+1, input);
         cbusTransmit(msgData)
@@ -250,7 +250,7 @@ var module = {
             }
             else{
                 expect(messagesIn.length).toBe(1), 'returned message count';
-                expect(cbusLib.decode(messagesIn[0]).opCode).toBe('6F'), 'CMDERR opcode';
+                expect(cbusLib.decode(messagesIn[0]).mnemonic).toBe('CMDERR'), 'CMDERR opcode';
             }
             done();
 		}, 50);
@@ -262,8 +262,8 @@ var module = {
     ${1}    | ${1}
     ${255}    | ${255}
     // add new test cases here
-  `("NVRD NV Read out of bounds test nvValue $input", ({ input, expectedResult}, done) => {
-		winston.debug({message: `TEST: BEGIN NV Read out of bounds test : NV Index: ${module.NVcount + 1} NV value ${input}`});
+  `("NVRD/CMDERR NV Read out of bounds test nvValue $input", ({ input, expectedResult}, done) => {
+		winston.debug({message: `TEST: BEGIN NVRD/CMDERR NV Read out of bounds test : NV Index: ${module.NVcount + 1} NV value ${input}`});
         msgData = cbusLib.encodeNVRD(module.nodeNumber, module.NVcount+1);
         cbusTransmit(msgData)
         setTimeout(function(){
@@ -272,7 +272,7 @@ var module = {
                 WarningCount++;
             }
             else{
-                expect(cbusLib.decode(messagesIn[0]).opCode).toBe('6F'), 'CMDERR opcode';
+                expect(cbusLib.decode(messagesIn[0]).mnemonic).toBe('CMDERR'), 'CMDERR opcode';
             }
             done();
         }, 50);
@@ -281,13 +281,13 @@ var module = {
 
     // NENRD EV 1 test
     //
-	test("NENRD EV1 test", function (done) {
-		winston.debug({message: 'TEST: BEGIN NENRD EV1 test'});
+	test("NENRD/ENRSP EV1 test", function (done) {
+		winston.debug({message: 'TEST: BEGIN NENRD/ENRSP EV1 test'});
         msgData = cbusLib.encodeNENRD(module.nodeNumber, 1);
         cbusTransmit(msgData)
 		setTimeout(function(){
             expect(messagesIn.length).toBe(1), 'returned message count';
-            expect(cbusLib.decode(messagesIn[0]).opCode).toBe('F2'), 'ENRSP opcode';
+            expect(cbusLib.decode(messagesIn[0]).mnemonic).toBe('ENRSP'), 'ENRSP opcode';
 //            expect(cbusLib.decode(messagesIn[0]).nodeVariableValue).toBe(expectedResult), 'NV value';
 			done();
 		}, 50);
@@ -296,13 +296,13 @@ var module = {
 
     // NENRD EV Max test
     //
-	test.skip("NENRD Max test", function (done) {
-		winston.debug({message: 'TEST: BEGIN NENRD Max test'});
+	test.skip("NENRD/ENRSP Max test", function (done) {
+		winston.debug({message: 'TEST: BEGIN NENRD/ENRSP Max test'});
         msgData = cbusLib.encodeNENRD(module.nodeNumber, module.eventCount);
         cbusTransmit(msgData)
 		setTimeout(function(){
             expect(messagesIn.length).toBe(1), 'returned message count';
-            expect(cbusLib.decode(messagesIn[0]).opCode).toBe('F2'), 'ENRSP opcode';
+            expect(cbusLib.decode(messagesIn[0]).mnemonic).toBe('ENRSP'), 'ENRSP opcode';
 //            expect(cbusLib.decode(messagesIn[1]).nodeVariableValue).toBe(expectedResult), 'NV value';
 			done();
 		}, 50);
@@ -311,7 +311,7 @@ var module = {
 
     // NENRD EV out of bounds test
     //
-	test("NENRD out of bounds test", function (done) {
+	test("NENRD/CMDERR out of bounds test", function (done) {
 		winston.debug({message: 'TEST: BEGIN NENRD out of bounds test'});
         msgData = cbusLib.encodeNENRD(module.nodeNumber, module.eventCount + 1);
         cbusTransmit(msgData)
@@ -321,7 +321,7 @@ var module = {
                 WarningCount++;
             }
             else{
-                expect(cbusLib.decode(messagesIn[0]).opCode).toBe('6F'), 'CMDERR opcode';
+                expect(cbusLib.decode(messagesIn[0]).mnemonic).toBe('CMDERR'), 'CMDERR opcode';
             }
 			done();
 		}, 50);
@@ -342,7 +342,7 @@ var module = {
             }
             else{
                 expect(messagesIn[0].length).toBe(18), 'message length';
-                expect(cbusLib.decode(messagesIn[0]).opCode).toBe('9B'), 'opcode';
+                expect(cbusLib.decode(messagesIn[0]).mnemonic).toBe('PARAN'), 'opcode';
             }
 			done();
 		}, 50);
@@ -367,7 +367,7 @@ var module = {
             }
             else{
                 expect(messagesIn[0].length).toBe(14), 'message length';
-                expect(cbusLib.decode(messagesIn[0]).opCode).toBe('59'), 'WRACK opcode';
+                expect(cbusLib.decode(messagesIn[0]).mnemonic).toBe('WRACK'), 'WRACK opcode';
             }
 			done();
 		}, 50);
@@ -391,7 +391,7 @@ var module = {
             }
             else{
                 expect(messagesIn[0].length).toBe(14), 'message length';
-                expect(cbusLib.decode(messagesIn[0]).opCode).toBe('59'), 'WRACK opcode';
+                expect(cbusLib.decode(messagesIn[0]).mnemonic).toBe('WRACK'), 'WRACK opcode';
             }
 			done();
 		}, 50);
@@ -411,18 +411,37 @@ var module = {
         cbusTransmit(msgData)
     setTimeout(function(){
         expect(messagesIn.length).toBe(1), 'returned message count';
-        expect(cbusLib.decode(messagesIn[0]).opCode).toBe('59'), 'WRACK opcode';
+        expect(cbusLib.decode(messagesIn[0]).mnemonic).toBe('WRACK'), 'WRACK opcode';
         //
         msgData = cbusLib.encodeNVRD(module.nodeNumber, module.NVcount);
         cbusTransmit(msgData)
         setTimeout(function(){
             expect(messagesIn.length).toBe(2), 'returned message count';
-            expect(cbusLib.decode(messagesIn[1]).opCode).toBe('97'), 'NVANS opcode';
+            expect(cbusLib.decode(messagesIn[1]).mnemonic).toBe('NVANS'), 'NVANS opcode';
             expect(cbusLib.decode(messagesIn[1]).nodeVariableValue).toBe(expectedResult), 'NV value';
             done();
         }, 50);
     }, 50);
 	})
+
+
+    // NERD test
+    //
+	test("NERD/ENRSP test", function (done) {
+		winston.debug({message: 'TEST: BEGIN NERD test'});
+        msgData = cbusLib.encodeNERD(module.nodeNumber);
+        cbusTransmit(msgData)
+		setTimeout(function(){
+            expect(messagesIn.length).toBeGreaterThan(0), 'returned message count';
+            var count = messagesIn.length;
+            for (var i = 0; i < messagesIn.length; i++)
+            {
+                expect(cbusLib.decode(messagesIn[i]).mnemonic).toBe('ENRSP'), 'ENRSP opcode';
+            }
+			done();
+		}, 50);
+	})
+
 
 
 

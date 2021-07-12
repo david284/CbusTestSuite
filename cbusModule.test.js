@@ -6,7 +6,6 @@ var cbusLib = require('cbusLibrary')
 const NET_PORT = 5550;
 const NET_ADDRESS = "127.0.0.1"
 
-function decToHex(num, len) {return parseInt(num).toString(16).toUpperCase().padStart(len, '0');}
 
 let testClient = undefined;
 let messagesIn = []

@@ -8,8 +8,9 @@ const NET_ADDRESS = "127.0.0.1"
 
 
 let testClient = undefined;
-let messagesIn = []
+let messagesIn = [];
 let WarningCount = 0;
+let events = [];
 
 beforeAll(() => {
 		winston.info({message: ' '});
@@ -106,6 +107,7 @@ var module = {
     "majorVersion": null,           // parameter 7
     "nodeFlags": null               // parameter 8
 }
+
 
 
     // RQNPN test
@@ -436,7 +438,9 @@ var module = {
             for (var i = 0; i < messagesIn.length; i++)
             {
                 expect(cbusLib.decode(messagesIn[i]).mnemonic).toBe('ENRSP'), 'ENRSP opcode';
+                events.push({"eventName": cbusLib.decode(messagesIn[i]).eventName, "eventIndex": cbusLib.decode(messagesIn[i]).eventIndex});
             }
+            		winston.debug({message: 'TEST: NERD/ENRSP test - events ' + JSON.stringify(events)});
 			done();
 		}, 50);
 	})

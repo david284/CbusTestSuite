@@ -353,8 +353,8 @@ var module = {
 
     // Event write Index 1 test
     //
-	test("NNLRN/EVLRN/WRACK EV1 test", function (done) {
-		winston.debug({message: 'TEST: BEGIN EV1 Write test'});
+	test("NNLRN/EVLRN/WRACK/NNULN EV1 test", function (done) {
+		winston.debug({message: 'TEST: BEGIN NNLRN/EVLRN/WRACK/NNULN EV1 Write test'});
         // put module into learn mode
         msgData = cbusLib.encodeNNLRN(module.nodeNumber);
         cbusTransmit(msgData)
@@ -370,6 +370,9 @@ var module = {
                 expect(messagesIn[0].length).toBe(14), 'message length';
                 expect(cbusLib.decode(messagesIn[0]).mnemonic).toBe('WRACK'), 'WRACK opcode';
             }
+            // release module from learn mode
+            msgData = cbusLib.encodeNNULN(module.nodeNumber);
+            cbusTransmit(msgData)
 			done();
 		}, 50);
 	})
@@ -377,8 +380,8 @@ var module = {
 
     // Event write Max Index test
     //
-	test("NNLRN/EVLRN/WRACK EVmax test", function (done) {
-		winston.debug({message: 'TEST: BEGIN EVmax Write test'});
+	test("NNLRN/EVLRN/WRACK/NNULN EVmax test", function (done) {
+		winston.debug({message: 'TEST: BEGIN NNLRN/EVLRN/WRACK/NNULN EVmax Write test'});
         // put module into learn mode
         msgData = cbusLib.encodeNNLRN(module.nodeNumber);
         cbusTransmit(msgData)
@@ -394,6 +397,9 @@ var module = {
                 expect(messagesIn[0].length).toBe(14), 'message length';
                 expect(cbusLib.decode(messagesIn[0]).mnemonic).toBe('WRACK'), 'WRACK opcode';
             }
+            // release module from learn mode
+            msgData = cbusLib.encodeNNULN(module.nodeNumber);
+            cbusTransmit(msgData)
 			done();
 		}, 50);
 	})
@@ -429,7 +435,7 @@ var module = {
     // NERD test
     //
 	test("NERD/ENRSP test", function (done) {
-		winston.debug({message: 'TEST: BEGIN NERD test'});
+		winston.debug({message: 'TEST: BEGIN NERD/ENRSP test'});
         msgData = cbusLib.encodeNERD(module.nodeNumber);
         cbusTransmit(msgData)
 		setTimeout(function(){
@@ -443,6 +449,27 @@ var module = {
             		winston.debug({message: 'TEST: NERD/ENRSP test - events ' + JSON.stringify(events)});
 			done();
 		}, 50);
+	})
+
+
+    // REVAL/NEVAL test
+    //
+	test("REVAL/NEVAL test", function (done) {
+		winston.debug({message: 'TEST: BEGIN REVAL/NEVAL test'});
+        for (var i = 0; i < events.length; i++)
+        {
+            msgData = cbusLib.encodeREVAL(module.nodeNumber, events[i].eventIndex, 1);
+            cbusTransmit(msgData)
+            setTimeout(function(){
+                expect(messagesIn.length).toBeGreaterThan(0), 'returned message count';
+                var count = messagesIn.length;
+                for (var i = 0; i < messagesIn.length; i++)
+                {
+                    expect(cbusLib.decode(messagesIn[i]).mnemonic).toBe('NEVAL'), 'NEVAL opcode';
+                }
+                done();
+            }, 50);
+        }
 	})
 
 

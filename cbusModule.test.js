@@ -172,7 +172,6 @@ var module = {
                 WarningCount++;
             }
             else{
-                expect(messagesIn[0].length).toBe(18), 'message length';
                 expect(cbusLib.decode(messagesIn[0]).mnemonic).toBe('CMDERR'), 'opcode';
             }
 			done();

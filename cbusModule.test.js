@@ -497,8 +497,23 @@ var module = {
             winston.debug({message: 'TEST: END REVAL/CMDERR test'});
             done();
         }, 50);
-            
     })
+
+
+    // NNEVN/EVNLF test
+    //
+	test("NNEVN/EVNLF test", function (done) {
+		winston.debug({message: 'TEST: BEGIN NNEVN/EVNLF test'});
+        msgData = cbusLib.encodeNNEVN(module.nodeNumber);
+        cbusTransmit(msgData)
+		setTimeout(function(){
+            expect(messagesIn.length).toBe(1), 'returned message count';
+            expect(cbusLib.decode(messagesIn[0]).mnemonic).toBe('EVNLF'), 'EVNLF opcode';
+//            expect(cbusLib.decode(messagesIn[0]).nodeVariableValue).toBe(expectedResult), 'NV value';
+			done();
+		}, 50);
+	})
+
 
 
 

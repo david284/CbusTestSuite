@@ -177,15 +177,15 @@ var module = {
 			done();
 		}, 50);
 	})
-
-
+    // NVSET/WRACK/NVRD/NVANS NV1 test
+    //
   test.each`
     input   | expectedResult
     ${0}    | ${0}
     ${1}    | ${1}
     ${255}    | ${255}
     // add new test cases here
-  `('NVSET/NVRD/WRACK NV1 test : nvValue $input', ({ input, expectedResult}, done) => {
+  `('NVSET/WRACK/NVRD/NVANS NV1 test : nvValue $input', ({ input, expectedResult}, done) => {
     expect(input).toBe(expectedResult)
 	winston.debug({message: `TEST: BEGIN NV1 write/read test : NV Index: 1 NV value: ${input}`});
     messagesIn = [];
@@ -207,15 +207,17 @@ var module = {
   })
 
 
+    // NVSET/WRACK/NVRD/NVANS NVmax test
+    //
   test.each`
     input   | expectedResult
     ${0}    | ${0}
     ${1}    | ${1}
     ${255}    | ${255}
     // add new test cases here
-  `(`NVSET/NVRD/WRACK NVmax test : nvValue $input`, ({ input, expectedResult}, done) => {
+  `(`NVSET/WRACK/NVRD/NVANS NVmax test : nvValue $input`, ({ input, expectedResult}, done) => {
     expect(input).toBe(expectedResult)
-	winston.debug({message: `TEST: BEGIN NVmax write/read test : NV Index: ${module.NVcount} NV value: ${input}`});
+	winston.debug({message: `TEST: BEGIN NVSET/WRACK/NVRD/NVANS NVmax test : NV Index: ${module.NVcount} NV value: ${input}`});
     messagesIn = [];
     msgData = cbusLib.encodeNVSET(module.nodeNumber, module.NVcount, input);
     cbusTransmit(msgData)

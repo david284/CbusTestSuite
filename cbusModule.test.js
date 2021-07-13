@@ -136,6 +136,8 @@ var module = {
                 winston.info({message: "TEST: node parameter count received: " + module.parameterCount});}
             if (input == 4) { module.eventCount = cbusLib.decode(messagesIn[0]).parameterValue 
                 winston.info({message: "TEST: node event count received: " + module.eventCount});}
+            if (input == 5) { module.eventVariableCount = cbusLib.decode(messagesIn[0]).parameterValue 
+                winston.info({message: "TEST: node event variable count received: " + module.eventVariableCount});}
             if (input == 6) { module.NVcount = cbusLib.decode(messagesIn[0]).parameterValue 
                 winston.info({message: "TEST: node variable count received: " + module.NVcount});}
 			done();
@@ -460,17 +462,44 @@ var module = {
         {
             msgData = cbusLib.encodeREVAL(module.nodeNumber, events[i].eventIndex, 1);
             cbusTransmit(msgData)
-            setTimeout(function(){
-                expect(messagesIn.length).toBeGreaterThan(0), 'returned message count';
-                var count = messagesIn.length;
-                for (var i = 0; i < messagesIn.length; i++)
-                {
-                    expect(cbusLib.decode(messagesIn[i]).mnemonic).toBe('NEVAL'), 'NEVAL opcode';
-                }
-                done();
-            }, 50);
         }
+
+        setTimeout(function(){
+            expect(messagesIn.length).toBeGreaterThan(0), 'returned message count';
+            var count = messagesIn.length;
+            for (var j = 0; j < messagesIn.length; j++)
+            {
+                winston.debug({message: 'TEST: NEVAL test ' + j});
+                expect(cbusLib.decode(messagesIn[j]).mnemonic).toBe('NEVAL'), 'NEVAL opcode';
+            }
+            winston.debug({message: 'TEST: END REVAL/NEVAL test '});
+            done();
+        }, 50);
 	})
+
+
+    // REVAL/NEVAL EV# out of bounds test
+    //
+	test("REVAL/CMDERR out of bounds test", function (done) {
+		winston.debug({message: 'TEST: BEGIN REVAL/CMDERR EV# out of bounds test'});
+        winston.debug({message: 'TEST: REVAL/CMDERR test - event ' + JSON.stringify(events[0])});
+        msgData = cbusLib.encodeREVAL(module.nodeNumber, events[0].eventIndex, module.eventVariableCount + 1);
+        cbusTransmit(msgData)
+        
+        setTimeout(function(){
+            if (messagesIn.length < 1) {
+                winston.info({message: '\u001b[36;1mTEST: WARNING: REVAL out of bounds test failed\u001b[0m'});
+                WarningCount++;
+            }
+            else{
+//                winston.info({message: 'TEST: WARNING: REVAL out of bounds test : ' + messagesIn.length});
+                expect(cbusLib.decode(messagesIn[0]).mnemonic).toBe('CMDERR'), 'CMDERR opcode';
+            }
+            winston.debug({message: 'TEST: END REVAL/CMDERR test'});
+            done();
+        }, 50);
+            
+    })
 
 
 

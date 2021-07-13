@@ -491,7 +491,6 @@ var module = {
                 WarningCount++;
             }
             else{
-//                winston.info({message: 'TEST: WARNING: REVAL out of bounds test : ' + messagesIn.length});
                 expect(cbusLib.decode(messagesIn[0]).mnemonic).toBe('CMDERR'), 'CMDERR opcode';
             }
             winston.debug({message: 'TEST: END REVAL/CMDERR test'});
@@ -509,12 +508,23 @@ var module = {
 		setTimeout(function(){
             expect(messagesIn.length).toBe(1), 'returned message count';
             expect(cbusLib.decode(messagesIn[0]).mnemonic).toBe('EVNLF'), 'EVNLF opcode';
-//            expect(cbusLib.decode(messagesIn[0]).nodeVariableValue).toBe(expectedResult), 'NV value';
 			done();
 		}, 50);
 	})
 
 
+    // RQEVN/NUMEV test
+    //
+	test("RQEVN/NUMEV test", function (done) {
+		winston.debug({message: 'TEST: BEGIN RQEVN/NUMEV test'});
+        msgData = cbusLib.encodeRQEVN(module.nodeNumber);
+        cbusTransmit(msgData)
+		setTimeout(function(){
+            expect(messagesIn.length).toBe(1), 'returned message count';
+            expect(cbusLib.decode(messagesIn[0]).mnemonic).toBe('NUMEV'), 'NUMEV opcode';
+			done();
+		}, 50);
+	})
 
 
 

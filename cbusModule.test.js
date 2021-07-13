@@ -12,6 +12,20 @@ let messagesIn = [];
 let WarningCount = 0;
 let events = [];
 
+var module = {
+    "nodeNumber": null,
+    "parameterCount":null,          // parameter 0
+    "manufacturerId":null,          // parameter 1
+    "minorCodeVersion":null,        // parameter 2
+    "moduleId":null,                // parameter 3
+    "eventCount":null,              // parameter 4
+    "eventVariableCount":null,      // parameter 5
+    "NVcount": null,                // parameter 6
+    "majorVersion": null,           // parameter 7
+    "nodeFlags": null               // parameter 8
+}
+
+
 beforeAll(() => {
 		winston.info({message: ' '});
 		winston.info({message: '======================================================================'});
@@ -77,7 +91,7 @@ function cbusTransmit(msgData)
 // ========================
 
 
-    // 0D QNN
+    // QNN
     //
 	test("QNN/PNN test", function (done) {
 		winston.debug({message: 'TEST: BEGIN QNN/PNN test'});
@@ -93,20 +107,6 @@ function cbusTransmit(msgData)
 			done();
 		}, 200);
 	})
-
-
-var module = {
-    "nodeNumber": null,
-    "parameterCount":null,          // parameter 0
-    "manufacturerId":null,          // parameter 1
-    "minorCodeVersion":null,        // parameter 2
-    "moduleId":null,                // parameter 3
-    "eventCount":null,              // parameter 4
-    "eventVariableCount":null,      // parameter 5
-    "NVcount": null,                // parameter 6
-    "majorVersion": null,           // parameter 7
-    "nodeFlags": null               // parameter 8
-}
 
 
 
@@ -134,12 +134,22 @@ var module = {
             expect(cbusLib.decode(messagesIn[0]).mnemonic).toBe('PARAN'), 'opcode';
             if (input == 0) { module.parameterCount = cbusLib.decode(messagesIn[0]).parameterValue 
                 winston.info({message: "TEST: node parameter count received: " + module.parameterCount});}
+            if (input == 1) { module.manufacturerId = cbusLib.decode(messagesIn[0]).parameterValue 
+                winston.info({message: "TEST: node manufacturer id received: " + module.manufacturerId});}
+            if (input == 2) { module.minorCodeVersion = cbusLib.decode(messagesIn[0]).parameterValue
+                winston.info({message: "TEST: node minorCodeVersion received: " + module.minorCodeVersion});}
+            if (input == 3) { module.moduleId = cbusLib.decode(messagesIn[0]).parameterValue 
+                winston.info({message: "TEST: node module id received: " + module.moduleId});}
             if (input == 4) { module.eventCount = cbusLib.decode(messagesIn[0]).parameterValue 
                 winston.info({message: "TEST: node event count received: " + module.eventCount});}
             if (input == 5) { module.eventVariableCount = cbusLib.decode(messagesIn[0]).parameterValue 
                 winston.info({message: "TEST: node event variable count received: " + module.eventVariableCount});}
             if (input == 6) { module.NVcount = cbusLib.decode(messagesIn[0]).parameterValue 
                 winston.info({message: "TEST: node variable count received: " + module.NVcount});}
+            if (input == 7) { module.majorVersion = cbusLib.decode(messagesIn[0]).parameterValue
+                winston.info({message: "TEST: node majorVersion received: " + module.majorVersion});}
+            if (input == 8) { module.nodeFlags = cbusLib.decode(messagesIn[0]).parameterValue 
+                winston.info({message: "TEST: node Flags received: " + module.nodeFlags});}
 			done();
 		}, 50);
 	})
@@ -177,6 +187,8 @@ var module = {
 			done();
 		}, 50);
 	})
+
+
     // NVSET/WRACK/NVRD/NVANS NV1 test
     //
   test.each`
@@ -237,6 +249,8 @@ var module = {
   })
 
 
+    // NVSET/CMDERR NV Write out of bounds test
+    //
   test.each`
     input   | expectedResult
     ${0}    | ${0}
@@ -260,6 +274,9 @@ var module = {
 		}, 50);
 	})
 
+
+    // NVRD/CMDERR NV Read out of bounds test
+    //
   test.each`
     input   | expectedResult
     ${0}    | ${0}
@@ -283,7 +300,68 @@ var module = {
 	})
 
 
+
+//
+// Events tests
+//
+
+
+    // RQEVN/NUMEV test
+    // read number of events
+    //
+	test("RQEVN/NUMEV test", function (done) {
+		winston.debug({message: 'TEST: BEGIN RQEVN/NUMEV test'});
+        msgData = cbusLib.encodeRQEVN(module.nodeNumber);
+        cbusTransmit(msgData)
+		setTimeout(function(){
+            expect(messagesIn.length).toBe(1), 'returned message count';
+            expect(cbusLib.decode(messagesIn[0]).mnemonic).toBe('NUMEV'), 'NUMEV opcode';
+            winston.info({message: 'TEST: NUMEV number of events ' + cbusLib.decode(messagesIn[0]).eventCount});
+			done();
+		}, 50);
+	})
+
+
+    // NERD test
+    // read event name & event index of all stored events for future use
+    //
+	test("NERD/ENRSP test", function (done) {
+		winston.debug({message: 'TEST: BEGIN NERD/ENRSP test'});
+        msgData = cbusLib.encodeNERD(module.nodeNumber);
+        cbusTransmit(msgData)
+		setTimeout(function(){
+            expect(messagesIn.length).toBeGreaterThan(0), 'returned message count';
+            var count = messagesIn.length;
+            for (var i = 0; i < messagesIn.length; i++)
+            {
+                expect(cbusLib.decode(messagesIn[i]).mnemonic).toBe('ENRSP'), 'ENRSP opcode';
+                events.push({"eventName": cbusLib.decode(messagesIn[i]).eventName, "eventIndex": cbusLib.decode(messagesIn[i]).eventIndex});
+                winston.info({message: 'TEST: ENRSP event ' + JSON.stringify(events[events.length-1])});
+            }
+       		winston.debug({message: 'TEST: NERD/ENRSP test - events ' + JSON.stringify(events)});
+			done();
+		}, 50);
+	})
+
+
+    // NNEVN/EVNLF test
+    // read event space left
+    //
+	test("NNEVN/EVNLF test", function (done) {
+		winston.debug({message: 'TEST: BEGIN NNEVN/EVNLF test'});
+        msgData = cbusLib.encodeNNEVN(module.nodeNumber);
+        cbusTransmit(msgData)
+		setTimeout(function(){
+            expect(messagesIn.length).toBe(1), 'returned message count';
+            expect(cbusLib.decode(messagesIn[0]).mnemonic).toBe('EVNLF'), 'EVNLF opcode';
+            winston.info({message: 'TEST: EVNLF event space left ' + cbusLib.decode(messagesIn[0]).EVSPC});
+			done();
+		}, 50);
+	})
+
+
     // NENRD EV 1 test
+    // read event by event index
     //
 	test("NENRD/ENRSP EV1 test", function (done) {
 		winston.debug({message: 'TEST: BEGIN NENRD/ENRSP EV1 test'});
@@ -299,10 +377,12 @@ var module = {
 
 
     // NENRD EV Max test
+    // read event by event index
     //
-	test.skip("NENRD/ENRSP Max test", function (done) {
+	test("NENRD/ENRSP Max test", function (done) {
 		winston.debug({message: 'TEST: BEGIN NENRD/ENRSP Max test'});
-        msgData = cbusLib.encodeNENRD(module.nodeNumber, module.eventCount);
+        var maxEventIndex = events[events.length-1].eventIndex;
+        msgData = cbusLib.encodeNENRD(module.nodeNumber, maxEventIndex);
         cbusTransmit(msgData)
 		setTimeout(function(){
             expect(messagesIn.length).toBe(1), 'returned message count';
@@ -314,6 +394,7 @@ var module = {
 
 
     // NENRD EV out of bounds test
+    // read event by event index
     //
 	test("NENRD/CMDERR out of bounds test", function (done) {
 		winston.debug({message: 'TEST: BEGIN NENRD out of bounds test'});
@@ -330,28 +411,6 @@ var module = {
 			done();
 		}, 50);
 	})
-
-
-
-    // NNLRN change to learn mode test
-    //
-	test.skip("NNLRN test", function (done) {
-		winston.debug({message: 'TEST: BEGIN NNLRN test'});
-        msgData = cbusLib.encodeNNLRN(module.nodeNumber);
-        cbusTransmit(msgData)
-		setTimeout(function(){
-            if (messagesIn.length != 1) {
-                winston.info({message: `\u001b[36;1mTEST: WARNING: NNLRN test failed\u001b[0m`});
-                WarningCount++;
-            }
-            else{
-                expect(messagesIn[0].length).toBe(18), 'message length';
-                expect(cbusLib.decode(messagesIn[0]).mnemonic).toBe('PARAN'), 'opcode';
-            }
-			done();
-		}, 50);
-	})
-
 
 
     // Event write Index 1 test
@@ -407,53 +466,6 @@ var module = {
 		}, 50);
 	})
 
-  test.skip
-/*  test.each`
-    input   | expectedResult
-    ${0}    | ${0}
-    ${1}    | ${1}
-    ${255}    | ${255}
-    // add new test cases here
-  `*/
-  ("CANID test setting CAN Id $input", ({ input, expectedResult}, done) => {
-		winston.debug({message: `TEST: BEGIN CANID test : CANID value ${input}`});
-        msgData = cbusLib.encodeCANID(module.nodeNumber, input);
-        cbusTransmit(msgData)
-    setTimeout(function(){
-        expect(messagesIn.length).toBe(1), 'returned message count';
-        expect(cbusLib.decode(messagesIn[0]).mnemonic).toBe('WRACK'), 'WRACK opcode';
-        //
-        msgData = cbusLib.encodeNVRD(module.nodeNumber, module.NVcount);
-        cbusTransmit(msgData)
-        setTimeout(function(){
-            expect(messagesIn.length).toBe(2), 'returned message count';
-            expect(cbusLib.decode(messagesIn[1]).mnemonic).toBe('NVANS'), 'NVANS opcode';
-            expect(cbusLib.decode(messagesIn[1]).nodeVariableValue).toBe(expectedResult), 'NV value';
-            done();
-        }, 50);
-    }, 50);
-	})
-
-
-    // NERD test
-    //
-	test("NERD/ENRSP test", function (done) {
-		winston.debug({message: 'TEST: BEGIN NERD/ENRSP test'});
-        msgData = cbusLib.encodeNERD(module.nodeNumber);
-        cbusTransmit(msgData)
-		setTimeout(function(){
-            expect(messagesIn.length).toBeGreaterThan(0), 'returned message count';
-            var count = messagesIn.length;
-            for (var i = 0; i < messagesIn.length; i++)
-            {
-                expect(cbusLib.decode(messagesIn[i]).mnemonic).toBe('ENRSP'), 'ENRSP opcode';
-                events.push({"eventName": cbusLib.decode(messagesIn[i]).eventName, "eventIndex": cbusLib.decode(messagesIn[i]).eventIndex});
-            }
-            		winston.debug({message: 'TEST: NERD/ENRSP test - events ' + JSON.stringify(events)});
-			done();
-		}, 50);
-	})
-
 
     // REVAL/NEVAL test
     //
@@ -501,32 +513,6 @@ var module = {
     })
 
 
-    // NNEVN/EVNLF test
-    //
-	test("NNEVN/EVNLF test", function (done) {
-		winston.debug({message: 'TEST: BEGIN NNEVN/EVNLF test'});
-        msgData = cbusLib.encodeNNEVN(module.nodeNumber);
-        cbusTransmit(msgData)
-		setTimeout(function(){
-            expect(messagesIn.length).toBe(1), 'returned message count';
-            expect(cbusLib.decode(messagesIn[0]).mnemonic).toBe('EVNLF'), 'EVNLF opcode';
-			done();
-		}, 50);
-	})
-
-
-    // RQEVN/NUMEV test
-    //
-	test("RQEVN/NUMEV test", function (done) {
-		winston.debug({message: 'TEST: BEGIN RQEVN/NUMEV test'});
-        msgData = cbusLib.encodeRQEVN(module.nodeNumber);
-        cbusTransmit(msgData)
-		setTimeout(function(){
-            expect(messagesIn.length).toBe(1), 'returned message count';
-            expect(cbusLib.decode(messagesIn[0]).mnemonic).toBe('NUMEV'), 'NUMEV opcode';
-			done();
-		}, 50);
-	})
 
 
 

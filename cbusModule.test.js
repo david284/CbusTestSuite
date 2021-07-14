@@ -413,6 +413,41 @@ function cbusTransmit(msgData)
 	})
 
 
+    // REQEV/EVANS test
+    // read event variable in learn mode
+    //
+	test("REQEV/EVANS test", function (done) {
+		winston.debug({message: 'TEST: BEGIN REQEV/EVANS test'});
+        winston.debug({message: 'TEST: REQEV/EVANS test - events array' + JSON.stringify(events)});
+        // put module into learn mode
+        msgData = cbusLib.encodeNNLRN(module.nodeNumber);
+        cbusTransmit(msgData)
+        for (var i = 0; i < events.length; i++)
+        {
+            winston.debug({message: 'TEST: REQEV/EVANS test - event ' + JSON.stringify(events[i])});
+            var nodeNumber = parseInt(events[i].eventName.substr(0, 4), 16)
+            var eventNumber = parseInt(events[i].eventName.substr(4, 4), 16)
+            msgData = cbusLib.encodeREQEV(nodeNumber, eventNumber, 1);
+            cbusTransmit(msgData)
+        }
+
+        setTimeout(function(){
+            expect(messagesIn.length).toBeGreaterThan(0), 'returned message count';
+            var count = messagesIn.length;
+            for (var j = 0; j < messagesIn.length; j++)
+            {
+                winston.debug({message: 'TEST: EVANS test ' + j});
+                expect(cbusLib.decode(messagesIn[j]).mnemonic).toBe('EVANS'), 'EVANS opcode';
+            }
+            // release module from learn mode
+            msgData = cbusLib.encodeNNULN(module.nodeNumber);
+            cbusTransmit(msgData)
+            winston.debug({message: 'TEST: END REQEV/EVANS test '});
+            done();
+        }, 50);
+	})
+
+
     // Event write Index 1 test
     //
 	test("NNLRN/EVLRN/WRACK/NNULN EV1 test", function (done) {
@@ -468,6 +503,7 @@ function cbusTransmit(msgData)
 
 
     // REVAL/NEVAL test
+    // read event variable in normal mode
     //
 	test("REVAL/NEVAL test", function (done) {
 		winston.debug({message: 'TEST: BEGIN REVAL/NEVAL test'});

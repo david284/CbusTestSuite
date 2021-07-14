@@ -513,6 +513,23 @@ function cbusTransmit(msgData)
     })
 
 
+    // ENUM/NNACK test
+    // Force self enumeration of CAN ID
+    // don't check actual can id as it could be anything, just that it returns NNACK
+    //
+	test("ENUM/NNACK out of bounds test", function (done) {
+		winston.debug({message: 'TEST: BEGIN ENUM/NNACK test'});
+        msgData = cbusLib.encodeENUM(module.nodeNumber);
+        cbusTransmit(msgData)
+		setTimeout(function(){
+            expect(messagesIn.length).toBe(1), 'returned message count';
+            expect(cbusLib.decode(messagesIn[0]).mnemonic).toBe('NNACK'), 'NNACK opcode';
+            expect(messagesIn[0].length).toBe(14), 'message length';
+			done();
+        }, 50);
+    })
+
+
 
 
 

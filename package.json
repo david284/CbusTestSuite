@@ -5,7 +5,8 @@
   "main": "server.js",
   "scripts": {
     "test": "jest cbusModule.test.js --noStackTrace --detectOpenHandles",
-    "start": "node server"
+    "run": "jest cbusModule.test.js --noStackTrace --detectOpenHandles",
+    "start": "jest cbusModule.test.js --noStackTrace --detectOpenHandles"
   },
   "author": "David Ellis",
   "license": "MIT",

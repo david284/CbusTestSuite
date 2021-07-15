@@ -512,6 +512,27 @@ function cbusTransmit(msgData)
     })
 
 
+    // EVULN test
+    // remove single event in learn mode
+    //
+	test("EVULN test", function (done) {
+		winston.debug({message: 'TEST: BEGIN EVULN test'});
+        // put module into learn mode
+        cbusTransmit(cbusLib.encodeNNLRN(module.nodeNumber));
+        // now clear single event - use first event thats been read back earlier
+        var nodeNumber = parseInt(events[0].eventName.substr(0, 4), 16)
+        var eventNumber = parseInt(events[0].eventName.substr(4, 4), 16)
+        cbusTransmit(cbusLib.encodeEVULN(nodeNumber, eventNumber));
+        setTimeout(function(){
+            expect(messagesIn.length).toBeGreaterThan(0), 'returned message count';
+            expect(cbusLib.decode(messagesIn[0]).mnemonic).toBe('WRACK'), 'WRACK opcode';
+            // release module from learn mode
+            cbusTransmit(cbusLib.encodeNNULN(module.nodeNumber));
+            done();
+        }, 50);
+	})
+
+
     // NNCLR test
     // clear all events in learn mode
     //

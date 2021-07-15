@@ -189,6 +189,23 @@ function cbusTransmit(msgData)
 	})
 
 
+    // ENUM/NNACK test
+    // Force self enumeration of CAN ID
+    // don't check actual can id as it could be anything, just that it returns NNACK
+    //
+	test("ENUM/NNACK out of bounds test", function (done) {
+		winston.debug({message: 'TEST: BEGIN ENUM/NNACK test'});
+        msgData = cbusLib.encodeENUM(module.nodeNumber);
+        cbusTransmit(msgData)
+		setTimeout(function(){
+            expect(messagesIn.length).toBe(1), 'returned message count';
+            expect(cbusLib.decode(messagesIn[0]).mnemonic).toBe('NNACK'), 'NNACK opcode';
+            expect(messagesIn[0].length).toBe(14), 'message length';
+			done();
+        }, 50);
+    })
+
+
     // NVSET/WRACK/NVRD/NVANS NV1 test
     //
   test.each`
@@ -311,8 +328,7 @@ function cbusTransmit(msgData)
     //
 	test("RQEVN/NUMEV test", function (done) {
 		winston.debug({message: 'TEST: BEGIN RQEVN/NUMEV test'});
-        msgData = cbusLib.encodeRQEVN(module.nodeNumber);
-        cbusTransmit(msgData)
+        cbusTransmit(cbusLib.encodeRQEVN(module.nodeNumber));
 		setTimeout(function(){
             expect(messagesIn.length).toBe(1), 'returned message count';
             expect(cbusLib.decode(messagesIn[0]).mnemonic).toBe('NUMEV'), 'NUMEV opcode';
@@ -448,60 +464,6 @@ function cbusTransmit(msgData)
 	})
 
 
-    // Event write Index 1 test
-    //
-	test("NNLRN/EVLRN/WRACK/NNULN EV1 test", function (done) {
-		winston.debug({message: 'TEST: BEGIN NNLRN/EVLRN/WRACK/NNULN EV1 Write test'});
-        // put module into learn mode
-        msgData = cbusLib.encodeNNLRN(module.nodeNumber);
-        cbusTransmit(msgData)
-        // teach event - <0xD2><NN hi><NN lo><EN hi><EN lo> <EV#><EV val>
-        msgData = cbusLib.encodeEVLRN(module.nodeNumber, 1, 1, 1);
-        cbusTransmit(msgData)
-		setTimeout(function(){
-            if (messagesIn.length < 1) {
-                winston.info({message: `\u001b[36;1mTEST: WARNING: EV1 Write test failed\u001b[0m`});
-                WarningCount++;
-            }
-            else{
-                expect(messagesIn[0].length).toBe(14), 'message length';
-                expect(cbusLib.decode(messagesIn[0]).mnemonic).toBe('WRACK'), 'WRACK opcode';
-            }
-            // release module from learn mode
-            msgData = cbusLib.encodeNNULN(module.nodeNumber);
-            cbusTransmit(msgData)
-			done();
-		}, 50);
-	})
-
-
-    // Event write Max Index test
-    //
-	test("NNLRN/EVLRN/WRACK/NNULN EVmax test", function (done) {
-		winston.debug({message: 'TEST: BEGIN NNLRN/EVLRN/WRACK/NNULN EVmax Write test'});
-        // put module into learn mode
-        msgData = cbusLib.encodeNNLRN(module.nodeNumber);
-        cbusTransmit(msgData)
-        // teach event - <0xD2><NN hi><NN lo><EN hi><EN lo> <EV#><EV val>
-        msgData = cbusLib.encodeEVLRN(module.nodeNumber, module.eventCount, module.eventCount, 1);
-        cbusTransmit(msgData)
-		setTimeout(function(){
-            if (messagesIn.length < 1) {
-                winston.info({message: `\u001b[36;1mTEST: WARNING: EVmax Write test failed\u001b[0m`});
-                WarningCount++;
-            }
-            else{
-                expect(messagesIn[0].length).toBe(14), 'message length';
-                expect(cbusLib.decode(messagesIn[0]).mnemonic).toBe('WRACK'), 'WRACK opcode';
-            }
-            // release module from learn mode
-            msgData = cbusLib.encodeNNULN(module.nodeNumber);
-            cbusTransmit(msgData)
-			done();
-		}, 50);
-	})
-
-
     // REVAL/NEVAL test
     // read event variable in normal mode
     //
@@ -528,6 +490,7 @@ function cbusTransmit(msgData)
 
 
     // REVAL/NEVAL EV# out of bounds test
+    // read event variable in normal mode
     //
 	test("REVAL/CMDERR out of bounds test", function (done) {
 		winston.debug({message: 'TEST: BEGIN REVAL/CMDERR EV# out of bounds test'});
@@ -549,22 +512,91 @@ function cbusTransmit(msgData)
     })
 
 
-    // ENUM/NNACK test
-    // Force self enumeration of CAN ID
-    // don't check actual can id as it could be anything, just that it returns NNACK
+    // NNCLR test
+    // clear all events in learn mode
     //
-	test("ENUM/NNACK out of bounds test", function (done) {
-		winston.debug({message: 'TEST: BEGIN ENUM/NNACK test'});
-        msgData = cbusLib.encodeENUM(module.nodeNumber);
+	test("NNCLR test", function (done) {
+		winston.debug({message: 'TEST: BEGIN NNCLR test'});
+        // put module into learn mode
+        cbusTransmit(cbusLib.encodeNNLRN(module.nodeNumber));
+        // now clear all events
+        cbusTransmit(cbusLib.encodeNNCLR(module.nodeNumber));
+        setTimeout(function(){
+            expect(messagesIn.length).toBeGreaterThan(0), 'returned message count';
+            expect(cbusLib.decode(messagesIn[0]).mnemonic).toBe('WRACK'), 'WRACK opcode';
+            // release module from learn mode
+            cbusTransmit(cbusLib.encodeNNULN(module.nodeNumber));
+            // now read number of events (expect it to be zero)
+            cbusTransmit(cbusLib.encodeRQEVN(module.nodeNumber));
+        }, 50);
+        setTimeout(function(){
+            expect(messagesIn.length).toBeGreaterThan(1), 'returned message count';
+            expect(cbusLib.decode(messagesIn[1]).mnemonic).toBe('NUMEV'), 'NUMEV opcode';
+            expect(cbusLib.decode(messagesIn[1]).eventCount).toBe(0), 'returned event count';
+            winston.debug({message: 'TEST: END NNCLR test '});
+            done();
+        }, 100);
+	})
+
+
+//
+// Need to write some events now, as we've just cleared all existing ones
+// otherwise, if we re-run the test suite, it'll fail as no events exist
+//
+
+
+    // Event write Index 1 test
+    //
+	test("NNLRN/EVLRN/WRACK/NNULN EV1 test", function (done) {
+		winston.debug({message: 'TEST: BEGIN NNLRN/EVLRN/WRACK/NNULN EV1 Write test'});
+        // put module into learn mode
+        msgData = cbusLib.encodeNNLRN(module.nodeNumber);
+        cbusTransmit(msgData)
+        // teach event - <0xD2><NN hi><NN lo><EN hi><EN lo> <EV#><EV val>
+        msgData = cbusLib.encodeEVLRN(1, 1, 1, 1);
         cbusTransmit(msgData)
 		setTimeout(function(){
-            expect(messagesIn.length).toBe(1), 'returned message count';
-            expect(cbusLib.decode(messagesIn[0]).mnemonic).toBe('NNACK'), 'NNACK opcode';
-            expect(messagesIn[0].length).toBe(14), 'message length';
+            if (messagesIn.length < 1) {
+                winston.info({message: `\u001b[36;1mTEST: WARNING: EV1 Write test failed\u001b[0m`});
+                WarningCount++;
+            }
+            else{
+                expect(messagesIn[0].length).toBe(14), 'message length';
+                expect(cbusLib.decode(messagesIn[0]).mnemonic).toBe('WRACK'), 'WRACK opcode';
+            }
+            // release module from learn mode
+            msgData = cbusLib.encodeNNULN(module.nodeNumber);
+            cbusTransmit(msgData)
 			done();
-        }, 50);
-    })
+		}, 50);
+	})
 
+
+    // Event write Max event number test
+    //
+	test("NNLRN/EVLRN/WRACK/NNULN EVmax test", function (done) {
+		winston.debug({message: 'TEST: BEGIN NNLRN/EVLRN/WRACK/NNULN EVmax Write test'});
+        // put module into learn mode
+        msgData = cbusLib.encodeNNLRN(module.nodeNumber);
+        cbusTransmit(msgData)
+        // teach event - <0xD2><NN hi><NN lo><EN hi><EN lo> <EV#><EV val>
+        msgData = cbusLib.encodeEVLRN(65535, 65535, module.eventCount, 1);
+        cbusTransmit(msgData)
+		setTimeout(function(){
+            if (messagesIn.length < 1) {
+                winston.info({message: `\u001b[36;1mTEST: WARNING: EVmax Write test failed\u001b[0m`});
+                WarningCount++;
+            }
+            else{
+                expect(messagesIn[0].length).toBe(14), 'message length';
+                expect(cbusLib.decode(messagesIn[0]).mnemonic).toBe('WRACK'), 'WRACK opcode';
+            }
+            // release module from learn mode
+            msgData = cbusLib.encodeNNULN(module.nodeNumber);
+            cbusTransmit(msgData)
+			done();
+		}, 50);
+	})
 
 
 
